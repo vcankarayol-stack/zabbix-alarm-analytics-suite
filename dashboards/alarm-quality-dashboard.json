@@ -1,0 +1,1474 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Open-source Grafana dashboard for Zabbix alarm analytics using PostgreSQL.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "Kapsam:\n<br>\n• Current month data\n<br>\n• Warning, Average, High ve Disaster alarmları\n<br>\n• Information ve Not Classified dahil değildir\n<br>\n• Disabled host ve disabled trigger kayıtları hariç tutulmuştur\n<br>\n• SLA:\n  - High > 240 dk\n  - Disaster > 120 dk",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.4.0",
+      "title": "📊 Alarm Quality Dashboard",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 10,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    date_trunc('day', to_timestamp(e.clock)) AS time,\r\n    COUNT(DISTINCT e.eventid) AS alarm_count\r\nFROM events e\r\nJOIN triggers t ON e.objectid = t.triggerid\r\nJOIN functions f ON t.triggerid = f.triggerid\r\nJOIN items i ON f.itemid = i.itemid\r\nJOIN hosts h ON i.hostid = h.hostid\r\nWHERE e.source = 0\r\n  AND e.object = 0\r\n  AND e.value = 1\r\n  AND t.priority IN (2,3,4,5)\r\n  AND t.status = 0\r\n  AND h.status = 0\r\n  AND e.clock >= extract(epoch from date_trunc('month', now()))\r\nGROUP BY 1\r\nORDER BY 1;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Daily alarm trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "description": "Average, High ve Disaster alarmlar baz alınmıştır",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 4
+              },
+              {
+                "color": "dark-red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Average": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "Disaster": {
+                        "color": "dark-red",
+                        "index": 3
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "Warning": {
+                        "color": "yellow",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 171
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trigger_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 602
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    h.name AS host_name,\r\n    CASE t.priority\r\n        WHEN 3 THEN 'Average'\r\n        WHEN 4 THEN 'High'\r\n        WHEN 5 THEN 'Disaster'\r\n    END AS severity,\r\n    t.description AS trigger_name,\r\n    COUNT(DISTINCT e.eventid) AS alarm_count,\r\n    to_char(to_timestamp(MAX(e.clock)), 'YYYY-MM-DD HH24:MI:SS') AS last_alarm_time\r\nFROM events e\r\nJOIN triggers t ON e.objectid = t.triggerid\r\nJOIN functions f ON t.triggerid = f.triggerid\r\nJOIN items i ON f.itemid = i.itemid\r\nJOIN hosts h ON i.hostid = h.hostid\r\nWHERE e.source = 0\r\n  AND e.object = 0\r\n  AND e.value = 1\r\n  AND t.priority IN (3,4,5)\r\n  AND h.status = 0\r\n  AND t.status = 0\r\n  AND e.clock >= extract(epoch from date_trunc('month', now()))\r\nGROUP BY h.name, t.priority, t.description\r\nORDER BY alarm_count DESC\r\nLIMIT 20;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Current month top alarm sources",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trigger_count"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 203
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "alarm_count"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 162
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    h.name AS host_name,\r\n    COUNT(DISTINCT e.eventid) AS alarm_count,\r\n    COUNT(DISTINCT t.triggerid) AS trigger_count,\r\n    to_char(to_timestamp(MAX(e.clock)), 'YYYY-MM-DD HH24:MI:SS') AS last_alarm_time\r\nFROM events e\r\nJOIN triggers t ON e.objectid = t.triggerid\r\nJOIN functions f ON t.triggerid = f.triggerid\r\nJOIN items i ON f.itemid = i.itemid\r\nJOIN hosts h ON i.hostid = h.hostid\r\nWHERE e.source = 0\r\n  AND e.object = 0\r\n  AND e.value = 1\r\n  AND t.priority IN (2,3,4,5)\r\n  AND h.status = 0\r\n  AND t.status = 0\r\n  AND e.clock >= extract(epoch from date_trunc('month', now()))\r\nGROUP BY h.name\r\nORDER BY alarm_count DESC\r\nLIMIT 20;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Current month top alarm producing hosts",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "description": "Buradaki alarm adetlerine müdürlüğü değişmeyen sunucularda oluşan alarmlarda dahil edilmiştir, nihai tablo ay sonunda paylaşılacaktır.  Zabbix Agent Not Available alarmları dahil edmilmemiştir.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "high_sla_percent"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "disaster_sla_percent"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "department"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 237
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH current_department AS (\r\n    SELECT\r\n        hostid,\r\n        MAX(value) AS department\r\n    FROM host_tag\r\n    WHERE LOWER(tag) = 'department'\r\n      AND value IS NOT NULL\r\n      AND value <> ''\r\n    GROUP BY hostid\r\n),\r\nalarm_events AS (\r\n    SELECT DISTINCT ON (e.eventid)\r\n        e.eventid,\r\n        cd.department,\r\n        t.priority,\r\n        ROUND((COALESCE(r.clock, extract(epoch from now())) - e.clock) / 60.0, 0) AS duration_minutes\r\n    FROM events e\r\n    JOIN triggers t ON e.objectid = t.triggerid\r\n    JOIN functions f ON t.triggerid = f.triggerid\r\n    JOIN items i ON f.itemid = i.itemid\r\n    JOIN hosts h ON i.hostid = h.hostid\r\n    JOIN current_department cd ON h.hostid = cd.hostid\r\n    LEFT JOIN event_recovery er ON er.eventid = e.eventid\r\n    LEFT JOIN events r ON er.r_eventid = r.eventid\r\n    WHERE e.source = 0\r\n      AND e.object = 0\r\n      AND e.value = 1\r\n      AND t.priority IN (4,5)\r\n      AND t.status = 0\r\n      AND h.status = 0\r\n      AND t.description NOT ILIKE '%Zabbix agent%'\r\n      AND e.clock >= extract(epoch from date_trunc('month', now()))\r\n),\r\ndepartment_stats AS (\r\n    SELECT\r\n        department,\r\n        COUNT(*) FILTER (WHERE priority = 4)::numeric AS total_high_alarm,\r\n        COUNT(*) FILTER (WHERE priority = 4 AND duration_minutes >= 240)::numeric AS high_sla_violation,\r\n        CASE\r\n            WHEN COUNT(*) FILTER (WHERE priority = 4) = 0 THEN 100::numeric\r\n            ELSE ROUND(\r\n                (\r\n                    COUNT(*) FILTER (WHERE priority = 4)\r\n                    -\r\n                    COUNT(*) FILTER (WHERE priority = 4 AND duration_minutes >= 240)\r\n                ) * 100.0\r\n                / COUNT(*) FILTER (WHERE priority = 4),\r\n                2\r\n            )\r\n        END AS high_sla_percent,\r\n        COUNT(*) FILTER (WHERE priority = 5)::numeric AS total_disaster_alarm,\r\n        COUNT(*) FILTER (WHERE priority = 5 AND duration_minutes >= 120)::numeric AS disaster_sla_violation,\r\n        CASE\r\n            WHEN COUNT(*) FILTER (WHERE priority = 5) = 0 THEN 100::numeric\r\n            ELSE ROUND(\r\n                (\r\n                    COUNT(*) FILTER (WHERE priority = 5)\r\n                    -\r\n                    COUNT(*) FILTER (WHERE priority = 5 AND duration_minutes >= 120)\r\n                ) * 100.0\r\n                / COUNT(*) FILTER (WHERE priority = 5),\r\n                2\r\n            )\r\n        END AS disaster_sla_percent\r\n    FROM alarm_events\r\n    GROUP BY department\r\n),\r\nfinal_result AS (\r\n    SELECT\r\n        department,\r\n        total_high_alarm,\r\n        high_sla_violation,\r\n        high_sla_percent,\r\n        total_disaster_alarm,\r\n        disaster_sla_violation,\r\n        disaster_sla_percent\r\n    FROM department_stats\r\n\r\n    UNION ALL\r\n\r\n    SELECT\r\n        'TOTAL' AS department,\r\n        SUM(total_high_alarm),\r\n        SUM(high_sla_violation),\r\n        CASE\r\n            WHEN SUM(total_high_alarm) = 0 THEN 100::numeric\r\n            ELSE ROUND(\r\n                (SUM(total_high_alarm) - SUM(high_sla_violation))\r\n                * 100.0 / SUM(total_high_alarm),\r\n                2\r\n            )\r\n        END AS high_sla_percent,\r\n        SUM(total_disaster_alarm),\r\n        SUM(disaster_sla_violation),\r\n        CASE\r\n            WHEN SUM(total_disaster_alarm) = 0 THEN 100::numeric\r\n            ELSE ROUND(\r\n                (SUM(total_disaster_alarm) - SUM(disaster_sla_violation))\r\n                * 100.0 / SUM(total_disaster_alarm),\r\n                2\r\n            )\r\n        END AS disaster_sla_percent\r\n    FROM department_stats\r\n)\r\nSELECT *\r\nFROM final_result\r\nORDER BY\r\n    CASE WHEN department = 'TOTAL' THEN 1 ELSE 0 END,\r\n    high_sla_percent ASC,\r\n    disaster_sla_percent ASC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "High - Disaster SLA compliance",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 4
+              },
+              {
+                "color": "dark-red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Average": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "Disaster": {
+                        "color": "dark-red",
+                        "index": 3
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "Warning": {
+                        "color": "yellow",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "open_minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 387
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 179
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 138
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "team"
+          }
+        ]
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH high_events AS (\r\n    SELECT DISTINCT ON (e.eventid)\r\n        e.eventid,\r\n        'High' AS severity,\r\n        COALESCE(ht.value, 'No Team') AS team,\r\n        h.name AS host_name,\r\n        e.name AS problem_name,\r\n        e.clock AS problem_clock,\r\n        r.clock AS recovery_clock,\r\n        ROUND((r.clock - e.clock) / 60.0, 0) AS duration_minutes,\r\n        ROUND((r.clock - e.clock) / 3600.0, 1) AS duration_hours,\r\n        240 AS sla_limit_minutes\r\n    FROM event_recovery er\r\n    JOIN events e ON er.eventid = e.eventid\r\n    JOIN events r ON er.r_eventid = r.eventid\r\n    JOIN triggers t ON e.objectid = t.triggerid\r\n    JOIN functions f ON t.triggerid = f.triggerid\r\n    JOIN items i ON f.itemid = i.itemid\r\n    JOIN hosts h ON i.hostid = h.hostid\r\n    LEFT JOIN host_tag ht \r\n        ON h.hostid = ht.hostid \r\n       AND LOWER(ht.tag) = 'team'\r\n    WHERE e.source = 0\r\n      AND e.object = 0\r\n      AND e.value = 1\r\n      AND t.priority = 4\r\n      AND t.status = 0\r\n      AND h.status = 0\r\n      AND e.name NOT ILIKE '%Zabbix agent is not available%'\r\n      AND e.clock >= extract(epoch from date_trunc('month', now()))\r\n)\r\nSELECT\r\n    severity,\r\n    team,\r\n    host_name,\r\n    problem_name,\r\n    to_char(to_timestamp(problem_clock), 'YYYY-MM-DD HH24:MI:SS') AS problem_time,\r\n    to_char(to_timestamp(recovery_clock), 'YYYY-MM-DD HH24:MI:SS') AS recovery_time,\r\n    duration_minutes,\r\n    duration_hours,\r\n    sla_limit_minutes,\r\n    duration_minutes - sla_limit_minutes AS exceeded_minutes\r\nFROM high_events\r\nWHERE duration_minutes > 240\r\nORDER BY exceeded_minutes DESC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "High SLA violations (>240 min)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 4
+              },
+              {
+                "color": "dark-red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Average": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "Disaster": {
+                        "color": "dark-red",
+                        "index": 3
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "Warning": {
+                        "color": "yellow",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "open_minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 387
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 179
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH disaster_events AS (\r\n    SELECT DISTINCT ON (e.eventid)\r\n        e.eventid,\r\n        'Disaster' AS severity,\r\n        COALESCE(ht.value, 'No Team') AS team,\r\n        h.name AS host_name,\r\n        e.name AS problem_name,\r\n        e.clock AS problem_clock,\r\n        r.clock AS recovery_clock,\r\n        ROUND((r.clock - e.clock) / 60.0, 0) AS duration_minutes,\r\n        ROUND((r.clock - e.clock) / 3600.0, 1) AS duration_hours,\r\n        120 AS sla_limit_minutes\r\n    FROM event_recovery er\r\n    JOIN events e ON er.eventid = e.eventid\r\n    JOIN events r ON er.r_eventid = r.eventid\r\n    JOIN triggers t ON e.objectid = t.triggerid\r\n    JOIN functions f ON t.triggerid = f.triggerid\r\n    JOIN items i ON f.itemid = i.itemid\r\n    JOIN hosts h ON i.hostid = h.hostid\r\n    LEFT JOIN host_tag ht \r\n        ON h.hostid = ht.hostid \r\n       AND LOWER(ht.tag) = 'team'\r\n    WHERE e.source = 0\r\n      AND e.object = 0\r\n      AND e.value = 1\r\n      AND t.priority = 5\r\n      AND t.status = 0\r\n      AND h.status = 0\r\n      AND e.clock >= extract(epoch from date_trunc('month', now()))\r\n)\r\nSELECT\r\n    severity,\r\n    team,\r\n    host_name,\r\n    problem_name,\r\n    to_char(to_timestamp(problem_clock), 'YYYY-MM-DD HH24:MI:SS') AS problem_time,\r\n    to_char(to_timestamp(recovery_clock), 'YYYY-MM-DD HH24:MI:SS') AS recovery_time,\r\n    duration_minutes,\r\n    duration_hours,\r\n    sla_limit_minutes,\r\n    duration_minutes - sla_limit_minutes AS exceeded_minutes\r\nFROM disaster_events\r\nWHERE duration_minutes > 120\r\nORDER BY exceeded_minutes DESC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Disaster SLA violations (>120 min)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 85,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "id": 6,
+      "options": {
+        "barRadius": 0.5,
+        "barWidth": 1,
+        "colorByField": "alarm_count",
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "normal",
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xField": "team",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n    ht.value AS team,\r\n    COUNT(DISTINCT e.eventid) AS alarm_count\r\nFROM events e\r\nJOIN triggers t ON e.objectid = t.triggerid\r\nJOIN functions f ON t.triggerid = f.triggerid\r\nJOIN items i ON f.itemid = i.itemid\r\nJOIN hosts h ON i.hostid = h.hostid\r\nJOIN host_tag ht ON h.hostid = ht.hostid\r\nWHERE e.source = 0\r\n  AND e.object = 0\r\n  AND e.value = 1\r\n  AND t.priority IN (2,3,4,5)\r\n  AND t.status = 0\r\n  AND h.status = 0\r\n  AND LOWER(ht.tag) = 'team'\r\n  AND e.clock >= extract(epoch from date_trunc('month', now()))\r\nGROUP BY ht.value\r\nORDER BY alarm_count DESC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Team Bazlı Alarm Dağılımı",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 4
+              },
+              {
+                "color": "dark-red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Average": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "Disaster": {
+                        "color": "dark-red",
+                        "index": 3
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "Warning": {
+                        "color": "yellow",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "open_minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 387
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 179
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 84
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH resolved_events AS (\r\n    SELECT DISTINCT ON (e.eventid)\r\n        e.eventid,\r\n        t.priority,\r\n        (r.clock - e.clock) / 60.0 AS duration_minutes\r\n    FROM event_recovery er\r\n    JOIN events e ON er.eventid = e.eventid\r\n    JOIN events r ON er.r_eventid = r.eventid\r\n    JOIN triggers t ON e.objectid = t.triggerid\r\n    JOIN functions f ON t.triggerid = f.triggerid\r\n    JOIN items i ON f.itemid = i.itemid\r\n    JOIN hosts h ON i.hostid = h.hostid\r\n    WHERE e.source = 0\r\n      AND e.object = 0\r\n      AND e.value = 1\r\n      AND t.priority IN (2,3,4,5)\r\n      AND t.status = 0\r\n      AND h.status = 0\r\n      AND e.clock >= extract(epoch from date_trunc('month', now()))\r\n)\r\nSELECT\r\n    CASE priority\r\n        WHEN 2 THEN 'Warning'\r\n        WHEN 3 THEN 'Average'\r\n        WHEN 4 THEN 'High'\r\n        WHEN 5 THEN 'Disaster'\r\n    END AS severity,\r\n    COUNT(*) AS resolved_alarm_count,\r\n    ROUND(AVG(duration_minutes), 0) AS avg_duration_minutes,\r\n    ROUND(MAX(duration_minutes), 0) AS max_duration_minutes\r\nFROM resolved_events\r\nGROUP BY priority\r\nORDER BY priority;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Severity-based MTTR ",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_ZABBIX_POSTGRESQL}"
+      },
+      "description": "Ay içinde 3 ve üzeri 5 dakikanın altında kapanan alarmlar",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 4
+              },
+              {
+                "color": "dark-red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Average": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "Disaster": {
+                        "color": "dark-red",
+                        "index": 3
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "Warning": {
+                        "color": "yellow",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 86
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "open_minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 387
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "problem_time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 179
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "short_alarm_count"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trigger_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 559
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg_duration_minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 168
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 90
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_ZABBIX_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH short_events AS (\r\n    SELECT DISTINCT ON (e.eventid)\r\n        e.eventid,\r\n        h.name AS host_name,\r\n        CASE t.priority\r\n            WHEN 2 THEN 'Warning'\r\n            WHEN 3 THEN 'Average'\r\n            WHEN 4 THEN 'High'\r\n            WHEN 5 THEN 'Disaster'\r\n        END AS severity,\r\n        t.description AS trigger_name,\r\n        e.clock AS problem_clock,\r\n        r.clock AS recovery_clock,\r\n        ROUND((r.clock - e.clock) / 60.0, 1) AS duration_minutes\r\n    FROM event_recovery er\r\n    JOIN events e ON er.eventid = e.eventid\r\n    JOIN events r ON er.r_eventid = r.eventid\r\n    JOIN triggers t ON e.objectid = t.triggerid\r\n    JOIN functions f ON t.triggerid = f.triggerid\r\n    JOIN items i ON f.itemid = i.itemid\r\n    JOIN hosts h ON i.hostid = h.hostid\r\n    WHERE e.source = 0\r\n      AND e.object = 0\r\n      AND e.value = 1\r\n      AND t.priority IN (2,3,4,5)\r\n      AND t.status = 0\r\n      AND h.status = 0\r\n      AND e.clock >= extract(epoch from date_trunc('month', now()))\r\n      AND (r.clock - e.clock) <= 300\r\n)\r\nSELECT\r\n    host_name,\r\n    severity,\r\n    trigger_name,\r\n    COUNT(*) AS short_alarm_count,\r\n    ROUND(AVG(duration_minutes), 1) AS avg_duration_minutes,\r\n    to_char(to_timestamp(MAX(problem_clock)), 'YYYY-MM-DD HH24:MI:SS') AS last_problem_time\r\nFROM short_events\r\nGROUP BY host_name, severity, trigger_name\r\nHAVING COUNT(*) >= 5\r\nORDER BY short_alarm_count DESC, avg_duration_minutes ASC;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "False positive candidates ",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Alarm Quality Dashboard",
+  "version": 1,
+  "weekStart": "",
+  "__inputs": [
+    {
+      "name": "DS_ZABBIX_POSTGRESQL",
+      "label": "Zabbix PostgreSQL",
+      "description": "PostgreSQL datasource connected to the Zabbix database",
+      "type": "datasource",
+      "pluginId": "grafana-postgresql-datasource",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "uid": null
+}
